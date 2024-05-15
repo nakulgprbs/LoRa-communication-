@@ -2,15 +2,17 @@
 #include <LoRa.h>
  
 byte msgCount = 0;            // count of outgoing messages
-byte localAddress = 0xBB;     // address of this device
-byte destination = 0xFF;      // destination to send to
+byte localAddress = 0xFF;     // address of this device
+byte destination = 0xBB;      // destination to send to
  
-int buzzer=3;
  
 String outgoing;              // outgoing message
 String Mymessage;             // stores message from the bluetooth
  
 int calling;                  // stores the command
+
+String getValue(String data, char separator, int index);
+
  
 void setup() {
   Serial.begin(9600);                   // initialize serial
@@ -22,7 +24,6 @@ void setup() {
   }
  
   Serial.println("LoRa init succeeded.");
-  pinMode(buzzer,OUTPUT);
 }
  
 void loop() {
@@ -31,6 +32,8 @@ void loop() {
    {
     //read data
     Mymessage=Serial.readString();
+    Serial.print("Message ");
+    Serial.println(Mymessage);
     sendMessage(Mymessage);
     delay(100);
     Mymessage = "";
@@ -39,11 +42,7 @@ void loop() {
  
       // parse for a packet, and call onReceive with the result:
   onReceive(LoRa.parsePacket());
-  }
- 
- 
- 
- 
+}
  
 void sendMessage(String outgoing) {
   LoRa.beginPacket();                   // start packet
@@ -53,6 +52,12 @@ void sendMessage(String outgoing) {
   LoRa.write(outgoing.length());        // add payload length
   LoRa.print(outgoing);                 // add payload
   LoRa.endPacket();                     // finish packet and send it
+  Serial.print("Sent ");
+  Serial.print(outgoing);
+  Serial.print("To ");
+  Serial.print(destination);
+  Serial.print("From ");
+  Serial.println(localAddress);
   msgCount++;                           // increment message ID
 }
  
@@ -62,6 +67,8 @@ void onReceive(int packetSize) {
   // read packet header bytes:
   int recipient = LoRa.read();          // recipient address
   byte sender = LoRa.read();            // sender address
+  Serial.print("Sender ");
+  Serial.println(sender);
   byte incomingMsgId = LoRa.read();     // incoming msg ID
   byte incomingLength = LoRa.read();    // incoming msg length
  
@@ -70,55 +77,41 @@ void onReceive(int packetSize) {
   while (LoRa.available()) {
     incoming += (char)LoRa.read();
   }
+  Serial.print("incoming ");
+  Serial.println(incoming);
  
   if (incomingLength != incoming.length()) {   // check length for error
-    //Serial.println("error: message length does not match length");
-    ;
+   // Serial.println("error: message length does not match length");
+   ;
     return;                             // skip rest of function
   }
  
   // if the recipient isn't this device or broadcast,
-  if (recipient != localAddress && recipient != 0xFF) {
-   // Serial.println("This message is not for me.");
+  if (recipient != localAddress) {
+    //Serial.println("This message is not for me.");
     ;
     return;                             // skip rest of function
   }
  
   // if message is for this device, or broadcast, print details:
-  //Serial.println("Received from: 0x" + String(sender, HEX));
-  //Serial.println("Sent to: 0x" + String(recipient, HEX));
+ // Serial.println("Received from: 0x" + String(sender, HEX));
+ // Serial.println("Sent to: 0x" + String(recipient, HEX));
   //Serial.println("Message ID: " + String(incomingMsgId));
  // Serial.println("Message length: " + String(incomingLength));
- // Serial.println("Message: " + incoming);
-//  Serial.println("RSSI: " + String(LoRa.packetRssi()));
-//  Serial.println("Snr: " + String(LoRa.packetSnr()));
-// Serial.println();
-   String q = getValue(incoming, ',', 0);
-    // Serial.println("q: " + q);
- 
-calling = q.toInt();
-    //Serial.println(q);
-if(calling== 45)
-{
- digitalWrite(buzzer, HIGH);
- delay(1000);
- digitalWrite(buzzer,LOW);
- delay(1000);
-  digitalWrite(buzzer, HIGH);
- delay(1000);
- digitalWrite(buzzer,LOW);
- delay(1000);
-  digitalWrite(buzzer, HIGH);
- delay(1000);
- digitalWrite(buzzer,LOW);
- delay(1000);
- 
- calling = 0;  
-    
-  }
- 
-  else 
-  Serial.println(q);
+  //Serial.println("Message: " + incoming);
+  //Serial.println("RSSI: " + String(LoRa.packetRssi()));
+  //Serial.println("Snr: " + String(LoRa.packetSnr()));
+  //Serial.println();
+    String q = getValue(incoming, ',', 0);
+    calling = q.toInt();
+    Serial.print("q ");
+    Serial.println(q);
+    if(calling== 45)
+    {
+    calling = 0;  
+        
+      }
+  
 }
 String getValue(String data, char separator, int index)
 {
